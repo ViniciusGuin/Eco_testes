@@ -70,7 +70,7 @@ app.get("/metrics/:serviceId", (req: Request, res: Response) => {
     if (collectionStatus?.status === "no-metrics") {
       res.status(404).json({
         error: "metrics_missing",
-        message: collectionStatus.message || "O serviço está ativo, mas não enviou métricas válidas nesta coleta.",
+        message: "O serviço está ativo, mas não enviou métricas válidas nesta coleta.",
         serviceId,
       });
       return;
@@ -78,7 +78,7 @@ app.get("/metrics/:serviceId", (req: Request, res: Response) => {
     if (collectionStatus?.status === "unavailable") {
       res.status(503).json({
         error: "service_unavailable",
-        message: collectionStatus.message || "O serviço não respondeu à consulta de métricas.",
+        message: "O serviço não respondeu à consulta de métricas.",
         serviceId,
       });
       return;
@@ -102,6 +102,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     status: 404,
     erro: 'Não Encontrado',
     mensagem: `A rota não existe neste servidor.`
+  });
+});
+
+// Erros inesperados não encerram o processo e retornam uma mensagem segura ao cliente.
+app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("Erro não tratado na requisição:", error);
+  if (res.headersSent) return;
+  res.status(500).json({
+    error: "internal_error",
+    message: "Não foi possível concluir a solicitação. Tente novamente mais tarde.",
   });
 });
 

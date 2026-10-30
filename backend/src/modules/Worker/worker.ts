@@ -2,7 +2,7 @@ import {CarbonApiError, CarbonAPISevice } from "../../integrations/carbon-api";
 import {ServiceApiError, ServiceAPISevice}from"../../integrations/services-api"
 import {WorkerService}  from "./worker.metric.service";
 import { WorkerCarbons } from "./worker.carbon.service";
-import { recordDiscoveredServices } from "../Services/services.service";
+import { getDiscoveredServices, recordDiscoveredServices, recordMetricCollectionFailure } from "../Services/services.service";
 
 export async function runWorker() {
   //Objetos para verificar Api Metricas e Carbons
@@ -46,6 +46,10 @@ export async function runWorker() {
     await WorkerServiceAPI.listarServices(servicesMetrics, ServiceAPI);
   }catch(error:unknown){
     if(error instanceof ServiceApiError){
+      // If discovery fails globally, retain the last service list and mark its cached entries unavailable.
+      for (const service of getDiscoveredServices()) {
+        recordMetricCollectionFailure(service.id, "unavailable", error.message);
+      }
       console.error(
         `${error.name}: ${error.message}\n` +
         `statusCode: ${error.statusCode}\n` );
