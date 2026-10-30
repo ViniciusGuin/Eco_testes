@@ -57,8 +57,8 @@ A camada de interface web foi desenvolvida com React e TypeScript para promover 
 ### 🔌 Integração com APIs Externas
 O sistema consome duas APIs externas para realizar a coleta de métricas e o cálculo do impacto ambiental.
 
-1. **Agregador de Métricas:** A rota `GET /services` realiza a descoberta das aplicações e o endpoint `GET /metrics/{id_servico}` obtém as amostras de consumo de hardware (`METRICS_AGGREGATOR_URL=http://agregador-metricas.local:8080`).
-2. **Serviço de Intensidade de Carbono:** A rota `GET /carbon-intensity/{code}` obtém os fatores regionais de emissão para o cálculo de carbono (`CARBON_INTENSITY_URL=http://carbon-intensity.local:8081`).
+1. **Agregador de Métricas:** O backend consulta `GET /services` e `GET /metrics/{id}`; configure a URL base em `API_METRIC` no arquivo `.env` (padrão do modelo: `https://metrics.unilaunch.org`).
+2. **Serviço de Intensidade de Carbono:** O backend consulta o catálogo regional de carbono; configure a URL base em `API_CARBON` (padrão do modelo: `https://carbon.unilaunch.org`).
 
 ---
 
@@ -256,7 +256,7 @@ Toda a infraestrutura do sistema é orquestrada através de containers Docker pa
    docker compose up --build -d
    ```
 3. **Acessos Locais:**
-   Após a inicialização, o painel web fica disponível em `http://localhost:5173` e a API REST em `http://localhost:3000`.
+   Após a inicialização, o painel web fica disponível em `http://localhost:8080` e a API REST em `http://localhost:3000`. A porta pública do frontend é definida por `FRONT_PORT` em `.env` (8080 no modelo); o backend usa `PORT` (3000 no modelo).
 
 ---
 
@@ -285,9 +285,9 @@ greener/
     ├── calculos.md             # Memória de cálculo de consumo energético e CO₂e
     ├── api.md                  # Especificação das rotas REST e autenticação JWT
     └── sprints/
-        ├── sprint-1.md         # Registro da Sprint Review 1 e evidências
-        ├── sprint-2.md
-        └── sprint-3.md
+        ├── sprint-1/sprint-1.md # Registro da Sprint Review 1 e evidências
+        ├── sprint-2/sprint-2.md
+        └── sprint-3/sprint-3.md
 ```
 
 ---
@@ -329,6 +329,13 @@ greener/
 Os commits e branches devem manter a rastreabilidade com as tarefas do repositório.
 * **Commits:** Devem conter o tipo da alteração e o número da issue correspondente (exemplo: `feat (#21): implementar integracao com agregador de metricas`).
 * **Branches:** Devem indicar a categoria e a tarefa associada (exemplo: `feat/21-integracao-services`).
+
+---
+
+### 🗓️ Acompanhamento das Daily's
+
+- [Issues Daily do Eco_testes](https://github.com/ViniciusGuin/Eco_testes/issues?q=is%3Aissue+Daily)
+- [Registros das Sprints](./docs/sprints/)
 
 ---
 
