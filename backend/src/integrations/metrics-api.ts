@@ -104,6 +104,11 @@ export async function fetchServiceMetrics(
     );
 
     if (!response.ok) {
+        if (response.status === 404) {
+            throw new InvalidMetricsPayloadError(
+                `Métricas ausentes para o serviço "${serviceId}".`
+            );
+        }
         throw new Error(
             `Erro ao consultar métricas do serviço "${serviceId}": HTTP ${response.status}`
         );
