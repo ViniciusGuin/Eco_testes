@@ -14,7 +14,7 @@ import {
   getServicesLastUpdatedAt,
   getCollectedServiceMetrics,
   getCollectedMetricsByServiceId,
-  getMetricCollectionError,
+  getMetricCollectionStatus,
 } from "./modules/Services/services.service.js";
 
 // Polling inicial e periódico é iniciado por server.ts.
@@ -66,11 +66,19 @@ app.get("/metrics/:serviceId", (req: Request, res: Response) => {
       });
       return;
     }
-    const collectionError = getMetricCollectionError(serviceId);
-    if (collectionError) {
+    const collectionStatus = getMetricCollectionStatus(serviceId);
+    if (collectionStatus?.status === "no-metrics") {
+      res.status(404).json({
+        error: "metrics_missing",
+        message: collectionStatus.message || "O serviço está ativo, mas não enviou métricas válidas nesta coleta.",
+        serviceId,
+      });
+      return;
+    }
+    if (collectionStatus?.status === "unavailable") {
       res.status(503).json({
         error: "service_unavailable",
-        message: collectionError.message || "O serviço não respondeu à consulta de métricas. O monitoramento dos demais serviços continua.",
+        message: collectionStatus.message || "O serviço não respondeu à consulta de métricas.",
         serviceId,
       });
       return;

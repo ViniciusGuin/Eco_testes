@@ -70,6 +70,13 @@ export async function fetchAvailableServices(): Promise<AggregatorService[]> {
 }
 
 
+export class InvalidMetricsPayloadError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "InvalidMetricsPayloadError";
+    }
+}
+
 export interface ServiceMetrics {
     collection_interval_seconds: number;
     metrics: {
@@ -102,7 +109,14 @@ export async function fetchServiceMetrics(
         );
     }
 
-    const data: unknown = await response.json();
+    let data: unknown;
+    try {
+        data = await response.json();
+    } catch {
+        throw new InvalidMetricsPayloadError(
+            `Resposta JSON inválida ao consultar métricas do serviço "${serviceId}".`
+        );
+    }
 
     if (
         typeof data !== "object" ||
@@ -113,7 +127,7 @@ export async function fetchServiceMetrics(
         typeof data.metrics !== "object" ||
         data.metrics === null
     ) {
-        throw new Error(
+        throw new InvalidMetricsPayloadError(
             `Resposta inválida ao consultar métricas do serviço "${serviceId}".`
         );
     }
@@ -130,7 +144,7 @@ export async function fetchServiceMetrics(
         !("network_gb" in metrics) ||
         typeof metrics.network_gb !== "number"
     ) {
-        throw new Error(
+        throw new InvalidMetricsPayloadError(
             `Métricas incompletas para o serviço "${serviceId}".`
         );
     }

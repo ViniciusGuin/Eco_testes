@@ -3,6 +3,7 @@ import type { Metric as ApiMetric, ServiceMetrics as DiscoveredService } from ".
 import {
     fetchAvailableServices,
     fetchServiceMetrics,
+    InvalidMetricsPayloadError,
     type AggregatorService,
     type ServiceMetrics,
 } from "../../integrations/metrics-api.js";
@@ -125,7 +126,7 @@ let discoveredServices: AggregatorService[] = [];
 let lastUpdatedAt: string | null = null;
 
 const collectedMetrics = new Map<string, CollectedServiceMetrics>();
-const metricCollectionErrors = new Map<string, { status: "unavailable" | "no-metrics"; message: string }>();
+const metricCollectionStatus = new Map<string, { status: "unavailable" | "no-metrics"; message: string }>();
 
 /** Syncs aggregator discovery data into the dashboard cache. */
 export function recordDiscoveredServices(services: DiscoveredService[]): void {
@@ -135,7 +136,7 @@ export function recordDiscoveredServices(services: DiscoveredService[]): void {
 
 /** Publishes only samples that have already been persisted successfully. */
 export function recordCollectedServiceMetrics(serviceId: string, sample: ApiMetric): void {
-    metricCollectionErrors.delete(serviceId);
+    metricCollectionStatus.delete(serviceId);
     collectedMetrics.set(serviceId, {
         serviceId,
         metrics: {
@@ -188,12 +189,16 @@ export async function refreshServiceMetrics(): Promise<void> {
             metrics = await fetchMetrics(service.id);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Falha desconhecida na consulta.";
-            recordMetricCollectionFailure(service.id, "unavailable", message);
-            console.error(`Serviço indisponível "${service.id}": ${message}`);
+            const noMetrics = error instanceof InvalidMetricsPayloadError;
+            metricCollectionStatus.set(service.id, {
+                status: noMetrics ? "no-metrics" : "unavailable",
+                message,
+            });
+            console.error(`Falha na coleta do serviço "${service.id}": ${message}`);
             continue;
         }
 
-        metricCollectionErrors.delete(service.id);
+        metricCollectionStatus.delete(service.id);
         const collectedAt = new Date();
         collectedMetrics.set(service.id, {
             serviceId: service.id,
@@ -216,11 +221,11 @@ export function recordMetricCollectionFailure(
     status: "unavailable" | "no-metrics",
     message: string,
 ): void {
-    metricCollectionErrors.set(serviceId, { status, message });
+    metricCollectionStatus.set(serviceId, { status, message });
 }
 
-export function getMetricCollectionError(serviceId: string): { status: "unavailable" | "no-metrics"; message: string } | undefined {
-    return metricCollectionErrors.get(serviceId);
+export function getMetricCollectionStatus(serviceId: string): { status: "unavailable" | "no-metrics"; message: string } | undefined {
+    return metricCollectionStatus.get(serviceId);
 }
 
 // Permite substituir a consulta de serviços durante testes.
