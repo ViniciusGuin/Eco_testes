@@ -54,6 +54,10 @@ export class WorkerService {
         await this.cadastrarServiceLocation(service,local,metric,serv.id);
 
       } catch (error: unknown) {
+        if (error instanceof ServiceApiError) {
+          const missingMetrics = error.code === "EXTERNAL_API_INVALID_DATA" || error.code === "EXTERNAL_API_INVALID_JSON";
+          recordMetricCollectionFailure(serv.id, missingMetrics ? "no-metrics" : "unavailable", error.message);
+        }
         if (error instanceof ServiceApiError ||error instanceof CarbonApiError) {
           console.error(
             `[Serviço: ${serv.name}]\n` +

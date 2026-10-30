@@ -34,7 +34,7 @@ export function ServiceCollectionSummary({ services }: { services: MonitoredServ
                         ? "Métricas parciais"
                         : serviceStatusLabels[service.status]}
                     </span>
-                    {service.status === "stale" && <small>{service.statusMessage}</small>}
+                    {service.statusMessage && <small>{service.statusMessage}</small>}
                   </th>
                   <td data-label="Localização">
                     {service.country || "País não informado"} · {service.region || "Região não informada"}

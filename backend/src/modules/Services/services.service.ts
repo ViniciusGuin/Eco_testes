@@ -125,6 +125,7 @@ let discoveredServices: AggregatorService[] = [];
 let lastUpdatedAt: string | null = null;
 
 const collectedMetrics = new Map<string, CollectedServiceMetrics>();
+const metricCollectionErrors = new Map<string, { status: "unavailable" | "no-metrics"; message: string }>();
 
 /** Syncs aggregator discovery data into the dashboard cache. */
 export function recordDiscoveredServices(services: DiscoveredService[]): void {
@@ -134,6 +135,7 @@ export function recordDiscoveredServices(services: DiscoveredService[]): void {
 
 /** Publishes only samples that have already been persisted successfully. */
 export function recordCollectedServiceMetrics(serviceId: string, sample: ApiMetric): void {
+    metricCollectionErrors.delete(serviceId);
     collectedMetrics.set(serviceId, {
         serviceId,
         metrics: {
@@ -185,13 +187,13 @@ export async function refreshServiceMetrics(): Promise<void> {
         try {
             metrics = await fetchMetrics(service.id);
         } catch (error: unknown) {
-            console.error(
-                `Falha ao consultar métricas do serviço "${service.id}".`,
-                error
-            );
+            const message = error instanceof Error ? error.message : "Falha desconhecida na consulta.";
+            recordMetricCollectionFailure(service.id, "unavailable", message);
+            console.error(`Serviço indisponível "${service.id}": ${message}`);
             continue;
         }
 
+        metricCollectionErrors.delete(service.id);
         const collectedAt = new Date();
         collectedMetrics.set(service.id, {
             serviceId: service.id,
@@ -207,6 +209,18 @@ export function getCollectedServiceMetrics(): CollectedServiceMetrics[] {
 
 export function getCollectedMetricsByServiceId(serviceId: string): CollectedServiceMetrics | undefined {
     return collectedMetrics.get(serviceId);
+}
+
+export function recordMetricCollectionFailure(
+    serviceId: string,
+    status: "unavailable" | "no-metrics",
+    message: string,
+): void {
+    metricCollectionErrors.set(serviceId, { status, message });
+}
+
+export function getMetricCollectionError(serviceId: string): { status: "unavailable" | "no-metrics"; message: string } | undefined {
+    return metricCollectionErrors.get(serviceId);
 }
 
 // Permite substituir a consulta de serviços durante testes.
