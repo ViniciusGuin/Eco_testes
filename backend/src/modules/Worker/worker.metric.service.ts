@@ -55,7 +55,7 @@ export class WorkerService {
 
       } catch (error: unknown) {
         if (error instanceof ServiceApiError) {
-          const missingMetrics = error.code === "EXTERNAL_API_INVALID_DATA" || error.code === "EXTERNAL_API_INVALID_JSON";
+          const missingMetrics = error.code === "EXTERNAL_API_INVALID_DATA" || error.code === "EXTERNAL_API_INVALID_JSON" || /HTTP 404/.test(error.message);
           recordMetricCollectionFailure(serv.id, missingMetrics ? "no-metrics" : "unavailable", error.message);
         }
         if (error instanceof ServiceApiError ||error instanceof CarbonApiError) {
